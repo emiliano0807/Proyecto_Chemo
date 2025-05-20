@@ -1,5 +1,4 @@
 const API_URL = "http://localhost:3000/api/productos";
-const API_MERMA_URL = "http://localhost:3000/api/merma";
 
 let productoEditandoId = null;
 let carrito = [];
@@ -17,13 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const mermaForm = document.getElementById("mermaForm");
-    if (mermaForm) {
-        mermaForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            await registrarMerma();
-        });
-    }
+
 });
 
 async function agregarProducto() {
@@ -69,7 +62,7 @@ async function actualizarProducto() {
     }
 }
 
-function obtenerDatosFormulario() {
+async function obtenerDatosFormulario() {
     const nombre = document.getElementById("nombre").value.trim();
     const descripcion = document.getElementById("descripcion").value.trim();
     const precio = parseFloat(document.getElementById("precio").value);
@@ -78,12 +71,41 @@ function obtenerDatosFormulario() {
     const stock_maximo = parseInt(document.getElementById("stock_maximo").value);
 
     if (!nombre || isNaN(precio) || isNaN(stock_actual)) {
-        alert("Completa los campos requeridos.");
-        return null;
+        alert("Por favor completa todos los campos requeridos.");
+        return;
     }
 
-    return { nombre, descripcion, precio, stock_actual, stock_minimo, stock_maximo };
+    try {
+        // Verificar si ya existe un producto con el mismo nombre
+        const respuesta = await fetch(API_URL);
+        const productos = await respuesta.json();
+
+        const yaExiste = productos.some(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+        if (yaExiste) {
+            alert("Ya existe un producto con ese nombre.");
+            return;
+        }
+
+        // Si no existe, crear
+        const nuevoProducto = { nombre, descripcion, precio, stock_actual, stock_minimo, stock_maximo };
+
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevoProducto)
+        });
+
+        if (!res.ok) throw new Error("Error al crear el producto");
+
+        document.getElementById("formularioProducto").reset();
+        cargarProductos();
+    } catch (error) {
+        console.error("Error al crear producto:", error);
+        alert("Ocurrió un error al crear el producto.");
+    }
 }
+
+//
 
 function limpiarFormulario() {
     document.getElementById("productoForm").reset();
@@ -104,11 +126,20 @@ async function cargarProductos() {
             const item = document.createElement("li");
             item.className = "bg-white p-4 rounded-lg shadow flex flex-col gap-2 border border-gray-200";
 
+            const enCarrito = carrito.find(p => p.id === producto.id);
+            const stockRestante = producto.stock_actual - (enCarrito?.cantidad || 0);
+
             item.innerHTML = `
                 <h3 class="text-lg font-bold text-gray-800">${producto.nombre}</h3>
                 <p class="text-sm text-gray-600">${producto.descripcion || "Sin descripción"}</p>
                 <p class="text-blue-700 font-semibold">Precio: $${producto.precio}</p>
-                <p class="text-sm text-gray-700">Stock: ${producto.stock_actual}</p>
+                <p class="text-sm text-gray-700">Stock disponible: ${stockRestante}</p>
+                <label class="text-sm mt-2">
+                    Cantidad:
+                    <select id="cantidad_${producto.id}" class="border rounded px-2 py-1 ml-2">
+                        ${[...Array(stockRestante).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('') || '<option disabled>No disponible</option>'}
+                    </select>
+                </label>
                 <div class="flex gap-2 mt-2">
                     <button onclick="editarProducto(${producto.id})"
                         class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm flex items-center gap-1">
@@ -132,6 +163,8 @@ async function cargarProductos() {
         lista.innerHTML = "<p class='text-red-600'>No se pudieron cargar los productos.</p>";
     }
 }
+
+
 
 async function editarProducto(id) {
     try {
@@ -193,39 +226,6 @@ async function llenarSelectProductos() {
     }
 }
 
-async function registrarMerma() {
-    const productoId = document.getElementById("producto_merma").value;
-    const cantidad = parseInt(document.getElementById("cantidad_merma").value);
-    const motivo = document.getElementById("motivo_merma").value.trim();
-
-    if (!productoId || isNaN(cantidad) || !motivo) {
-        alert("Completa todos los campos de merma.");
-        return;
-    }
-
-    try {
-        const respuesta = await fetch(API_MERMA_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ producto_id: productoId, cantidad, motivo })
-        });
-
-        const resultado = await respuesta.json();
-
-        if (!respuesta.ok) {
-            alert(`Error: ${resultado.error}`);
-        } else {
-            alert("✅ Merma registrada correctamente");
-            document.getElementById("mermaForm").reset();
-            await cargarProductos();
-            await llenarSelectProductos();
-        }
-    } catch (error) {
-        console.error("Error al registrar la merma:", error);
-        alert("Hubo un error al registrar la merma.");
-    }
-}
-
 // -------------------- CARRITO DE COMPRAS -----------------------
 
 async function agregarAlCarrito(id) {
@@ -235,18 +235,24 @@ async function agregarAlCarrito(id) {
 
         const producto = await res.json();
 
+        const cantidadSelect = document.getElementById(`cantidad_${id}`);
+        const cantidad = parseInt(cantidadSelect.value);
+
         const existente = carrito.find(p => p.id === producto.id);
         if (existente) {
-            existente.cantidad += 1;
+            existente.cantidad += cantidad;
         } else {
-            carrito.push({ ...producto, cantidad: 1 });
+            carrito.push({ ...producto, cantidad });
         }
 
         mostrarCarrito();
+        //cargarProductos(); // Actualizar el stock visible
     } catch (error) {
         console.error("Error al agregar al carrito:", error);
     }
 }
+
+
 
 function mostrarCarrito() {
     const lista = document.getElementById("carritoLista");
@@ -257,19 +263,53 @@ function mostrarCarrito() {
     lista.innerHTML = "";
     let total = 0;
 
-    carrito.forEach(p => {
+    carrito.forEach((p, index) => {
         const item = document.createElement("li");
-        item.className = "flex justify-between border-b pb-1";
+        item.className = "flex justify-between items-center border-b py-2 gap-2 flex-wrap";
+
+        const totalProducto = (p.precio * p.cantidad).toFixed(2);
+        total += parseFloat(totalProducto);
+
         item.innerHTML = `
-            <span>${p.nombre} x ${p.cantidad}</span>
-            <span>$${(p.precio * p.cantidad).toFixed(2)}</span>
+            <span class="flex-1">${p.nombre}</span>
+            <input type="number" min="1" value="${p.cantidad}" class="w-16 border rounded px-1 text-center"
+                onchange="cambiarCantidadEnCarrito(${index}, this.value)">
+            <span class="w-24 text-right">$${totalProducto}</span>
+            <button onclick="eliminarDelCarrito(${index})"
+                class="ml-2 text-red-600 hover:text-red-800 text-sm">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
         `;
         lista.appendChild(item);
-        total += p.precio * p.cantidad;
     });
 
     totalDiv.textContent = `Total: $${total.toFixed(2)}`;
 }
+
+function cambiarCantidadEnCarrito(index, nuevaCantidad) {
+    nuevaCantidad = parseInt(nuevaCantidad);
+    if (nuevaCantidad <= 0) {
+        eliminarDelCarrito(index);
+    } else {
+        carrito[index].cantidad = nuevaCantidad;
+    }
+    mostrarCarrito();
+    cargarProductos(); // Refrescar stock
+}
+
+
+function eliminarDelCarrito(index) {
+    carrito.splice(index, 1);
+    mostrarCarrito();
+    cargarProductos(); // Refrescar stock
+}
+
+function vaciarCarrito() {
+    carrito = [];
+    mostrarCarrito();
+    cargarProductos(); // Refrescar stock
+}
+
 // -------------------- FINALIZAR COMPRA -----------------------
 document.getElementById("finalizarCompra").addEventListener("click", async () => {
     if (carrito.length === 0) {

@@ -4,6 +4,7 @@ const { sequelize, connectDB } = require("./data/source");
 const productoRoutes = require("./routes/productoRoutes");
 const mermaRoutes = require("./routes/mermaRoutes");
 const notaRemisionRoutes = require("./routes/notaRemisionRoutes");
+const authRoutes = require("./routes/authRoutes"); // 👈 Ruta de autenticación
 
 
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/productos", productoRoutes);
 app.use("/api/merma", mermaRoutes);
 app.use("/api/nota_remision", notaRemisionRoutes);
+app.use("/api", authRoutes); // 👈 Ruta de autenticación
 
 // 🌱 Función para insertar productos iniciales si no existen
 const insertarProductosIniciales = async () => {

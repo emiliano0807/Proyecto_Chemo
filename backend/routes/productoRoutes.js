@@ -7,6 +7,7 @@ const {
     actualizarProductoController,
     eliminarProductoController
 } = require("../controllers/productoController");
+const { permitirRoles } = require("../middlewares/authMiddleware");
 
 router.get("/", obtenerProductosController);
 router.get("/:id", obtenerProductoPorIdController);

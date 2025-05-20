@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <script defer src="login.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css">
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+  <form id="loginForm" class="bg-white p-8 rounded shadow-md w-96">
+    <h2 class="text-2xl font-bold mb-4">Iniciar Sesión</h2>
+    <div class="mb-4">
+      <label class="block">Usuario</label>
+      <input type="text" id="usuario" required class="w-full border p-2 rounded">
+    </div>
+    <div class="mb-4">
+      <label class="block">Contraseña</label>
+      <input type="password" id="contrasena" required class="w-full border p-2 rounded">
+    </div>
+    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Ingresar</button>
+  </form>
+</body>
+</html>

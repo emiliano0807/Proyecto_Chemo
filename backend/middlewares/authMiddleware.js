@@ -1,6 +1,6 @@
 const permitirRoles = (...rolesPermitidos) => {
   return (req, res, next) => {
-    const { usuario, rol } = req.body;
+    const rol = req.headers['rol']; // leer desde encabezado HTTP
 
     if (!rol || !rolesPermitidos.includes(rol)) {
       return res.status(403).json({ mensaje: "Acceso denegado" });

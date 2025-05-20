@@ -3,7 +3,29 @@ const API_URL = "http://localhost:3000/api/productos";
 let productoEditandoId = null;
 let carrito = [];
 
+function obtenerRolUsuario() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    return usuario?.rol || null; // 'admin' o 'cliente'
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
+        const rol = obtenerRolUsuario();
+
+    if (rol === "cliente") {
+        // Oculta el formulario de productos
+        const form = document.getElementById("productoForm");
+        if (form) form.style.display = "none";
+
+        // Oculta el botón de finalizar compra si no es necesario
+        const btn = document.getElementById("finalizarCompra");
+        if (btn) btn.style.display = "block"; // los clientes sí pueden comprar
+
+    } else if (rol === "admin") {
+        // Mostrar todo
+        const form = document.getElementById("productoForm");
+        if (form) form.style.display = "block";
+    }
     cargarProductos();
     llenarSelectProductos();
 
@@ -117,10 +139,14 @@ async function cargarProductos() {
     if (!lista) return;
 
     lista.innerHTML = "";
+    const rol = obtenerRolUsuario();
+    let botonesHTML = ""
 
     try {
         const respuesta = await fetch(API_URL);
         const productos = await respuesta.json();
+        console.log("Respuesta del backend:", productos);
+
 
         productos.forEach((producto) => {
             const item = document.createElement("li");
@@ -140,23 +166,45 @@ async function cargarProductos() {
                         ${[...Array(stockRestante).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('') || '<option disabled>No disponible</option>'}
                     </select>
                 </label>
-                <div class="flex gap-2 mt-2">
-                    <button onclick="editarProducto(${producto.id})"
-                        class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm flex items-center gap-1">
-                        <i class="bi bi-pencil-square"></i> Editar
-                    </button>
-                    <button onclick="eliminarProducto(${producto.id})"
-                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm flex items-center gap-1">
-                        <i class="bi bi-trash"></i> Eliminar
-                    </button>
-                    <button onclick="agregarAlCarrito(${producto.id})"
-                        class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-1">
-                        <i class="bi bi-cart-plus"></i> Añadir
-                    </button>
-                </div>
             `;
 
             lista.appendChild(item);
+            if (rol === "admin") {
+    botonesHTML += `
+        <button onclick="editarProducto(${producto.id})"
+            class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm flex items-center gap-1">
+            <i class="bi bi-pencil-square"></i> Editar
+        </button>
+        <button onclick="eliminarProducto(${producto.id})"
+            class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm flex items-center gap-1">
+            <i class="bi bi-trash"></i> Eliminar
+        </button>
+    `;
+}
+
+// Todos pueden agregar al carrito
+botonesHTML += `
+    <button onclick="agregarAlCarrito(${producto.id})"
+        class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-1">
+        <i class="bi bi-cart-plus"></i> Añadir
+    </button>
+`;
+
+item.innerHTML = `
+    <h3 class="text-lg font-bold text-gray-800">${producto.nombre}</h3>
+    <p class="text-sm text-gray-600">${producto.descripcion || "Sin descripción"}</p>
+    <p class="text-blue-700 font-semibold">Precio: $${producto.precio}</p>
+    <p class="text-sm text-gray-700">Stock disponible: ${stockRestante}</p>
+    <label class="text-sm mt-2">
+        Cantidad:
+        <select id="cantidad_${producto.id}" class="border rounded px-2 py-1 ml-2">
+            ${[...Array(stockRestante).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('') || '<option disabled>No disponible</option>'}
+        </select>
+    </label>
+    <div class="flex gap-2 mt-2">
+        ${botonesHTML}
+    </div>
+`;
         });
     } catch (error) {
         console.error("Error al cargar productos:", error);
@@ -392,4 +440,10 @@ async function generarNotaDeRemision(carrito) {
     } catch (error) {
         throw new Error("Hubo un problema al generar la nota de remisión.");
     }
+}
+// -------------------- Cierre de sesion -----------------------
+function cerrarSesion() {
+    localStorage.removeItem("usuario");
+    alert("Has cerrado sesión.");
+    window.location.href = "login.html"; // Redirigir a la página de inicio
 }

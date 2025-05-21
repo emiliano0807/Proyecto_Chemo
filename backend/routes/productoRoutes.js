@@ -9,11 +9,11 @@ const {
 } = require("../controllers/productoController");
 const { permitirRoles } = require("../middlewares/authMiddleware");
 
-router.get("/",permitirRoles("cliente"), obtenerProductosController);
-router.get("/:id",permitirRoles("cliente"), obtenerProductoPorIdController);
-router.post("/", permitirRoles("admin"), crearProductoController);
-router.put("/:id",permitirRoles("admin"), actualizarProductoController);
-router.delete("/:id",permitirRoles("admin"), eliminarProductoController);
+router.get("/", obtenerProductosController);
+router.get("/:id", obtenerProductoPorIdController);
+router.post("/", crearProductoController);
+router.put("/:id", actualizarProductoController);
+router.delete("/:id", eliminarProductoController);
 
 module.exports = router;
 

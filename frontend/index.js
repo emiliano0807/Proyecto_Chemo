@@ -89,8 +89,6 @@ async function obtenerDatosFormulario() {
     const descripcion = document.getElementById("descripcion").value.trim();
     const precio = parseFloat(document.getElementById("precio").value);
     const stock_actual = parseInt(document.getElementById("stock_actual").value);
-    const stock_minimo = parseInt(document.getElementById("stock_minimo").value);
-    const stock_maximo = parseInt(document.getElementById("stock_maximo").value);
 
     if (!nombre || isNaN(precio) || isNaN(stock_actual)) {
         alert("Por favor completa todos los campos requeridos.");
@@ -109,7 +107,7 @@ async function obtenerDatosFormulario() {
         }
 
         // Si no existe, crear
-        const nuevoProducto = { nombre, descripcion, precio, stock_actual, stock_minimo, stock_maximo };
+        const nuevoProducto = { nombre, descripcion, precio };
 
         const res = await fetch(API_URL, {
             method: "POST",
@@ -137,25 +135,22 @@ function limpiarFormulario() {
 async function cargarProductos() {
     const lista = document.getElementById("productoList");
     if (!lista) return;
-
-    lista.innerHTML = "";
+    lista.innerHTML = ""; // Limpiar la lista antes de cargar nuevos productos
     const rol = obtenerRolUsuario();
-    let botonesHTML = ""
-
+    
     try {
         const respuesta = await fetch(API_URL);
         const productos = await respuesta.json();
         console.log("Respuesta del backend:", productos);
-
-
+        
         productos.forEach((producto) => {
             const item = document.createElement("li");
             item.className = "bg-white p-4 rounded-lg shadow flex flex-col gap-2 border border-gray-200";
-
+            
+            let botonesHTML = ""
             const enCarrito = carrito.find(p => p.id === producto.id);
             const stockRestante = producto.stock_actual - (enCarrito?.cantidad || 0);
-
-            item.innerHTML = `
+                item.innerHTML = `
                 <h3 class="text-lg font-bold text-gray-800">${producto.nombre}</h3>
                 <p class="text-sm text-gray-600">${producto.descripcion || "Sin descripción"}</p>
                 <p class="text-blue-700 font-semibold">Precio: $${producto.precio}</p>
@@ -170,45 +165,46 @@ async function cargarProductos() {
 
             lista.appendChild(item);
             if (rol === "admin") {
-    botonesHTML += `
-        <button onclick="editarProducto(${producto.id})"
-            class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm flex items-center gap-1">
-            <i class="bi bi-pencil-square"></i> Editar
-        </button>
-        <button onclick="eliminarProducto(${producto.id})"
-            class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm flex items-center gap-1">
-            <i class="bi bi-trash"></i> Eliminar
-        </button>
-    `;
-}
+                botonesHTML += `
+                    <button onclick="editarProducto(${producto.id})"
+                        class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm flex items-center gap-1">
+                        <i class="bi bi-pencil-square"></i> Editar
+                    </button>
+                    <button onclick="eliminarProducto(${producto.id})"
+                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm flex items-center gap-1">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                `;
+            }
 
-// Todos pueden agregar al carrito
-botonesHTML += `
-    <button onclick="agregarAlCarrito(${producto.id})"
-        class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-1">
-        <i class="bi bi-cart-plus"></i> Añadir
-    </button>
-`;
+            // Todos pueden agregar al carrito
+            botonesHTML += `
+                <button onclick="agregarAlCarrito(${producto.id})"
+                    class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center gap-1">
+                    <i class="bi bi-cart-plus"></i> Añadir
+                </button>
+            `;
 
-item.innerHTML = `
-    <h3 class="text-lg font-bold text-gray-800">${producto.nombre}</h3>
-    <p class="text-sm text-gray-600">${producto.descripcion || "Sin descripción"}</p>
-    <p class="text-blue-700 font-semibold">Precio: $${producto.precio}</p>
-    <p class="text-sm text-gray-700">Stock disponible: ${stockRestante}</p>
-    <label class="text-sm mt-2">
-        Cantidad:
-        <select id="cantidad_${producto.id}" class="border rounded px-2 py-1 ml-2">
-            ${[...Array(stockRestante).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('') || '<option disabled>No disponible</option>'}
-        </select>
-    </label>
-    <div class="flex gap-2 mt-2">
-        ${botonesHTML}
-    </div>
-`;
+            item.innerHTML = `
+                <h3 class="text-lg font-bold text-gray-800">${producto.nombre}</h3>
+                <p class="text-sm text-gray-600">${producto.descripcion || "Sin descripción"}</p>
+                <p class="text-blue-700 font-semibold">Precio: $${producto.precio}</p>
+                <p class="text-sm text-gray-700">Stock disponible: ${stockRestante}</p>
+                <label class="text-sm mt-2">
+                    Cantidad:
+                    <select id="cantidad_${producto.id}" class="border rounded px-2 py-1 ml-2">
+                        ${[...Array(stockRestante).keys()].map(i => `<option value="${i + 1}">${i + 1}</option>`).join('') || '<option disabled>No disponible</option>'}
+                    </select>
+                </label>
+                <div class="flex gap-2 mt-2">
+                    ${botonesHTML}
+                </div>
+            `;
+        lista.appendChild(item);
         });
     } catch (error) {
         console.error("Error al cargar productos:", error);
-        lista.innerHTML = "<p class='text-red-600'>No se pudieron cargar los productos.</p>";
+        lista.botonesHTML = "<p class='text-red-600'>No se pudieron cargar los productos.</p>";
     }
 }
 

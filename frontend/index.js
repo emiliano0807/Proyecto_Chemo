@@ -362,27 +362,38 @@ document.getElementById("finalizarCompra").addEventListener("click", async () =>
     }
 
     try {
-        // Primero, actualizar el stock en la base de datos
+        // 1. Actualizar el stock
         for (let producto of carrito) {
             const stockNuevo = producto.stock_actual - producto.cantidad;
             await actualizarStockProducto(producto.id, stockNuevo);
         }
 
-        // Luego, generar la nota de remisión (puedes agregar un endpoint para ello)
-        const nota = await generarNotaDeRemision(carrito);
+        // 2. Generar nota de remisión desde el backend
+        const folio = await generarNotaDeRemision(carrito);
 
-        // Limpiar el carrito
+        // 3. Crear objeto nota para guardar localmente
+        const nota = {
+            folio,
+            fecha: new Date().toLocaleString(),
+            productos: carrito,
+            total: carrito.reduce((sum, p) => sum + p.precio * p.cantidad, 0)
+        };
+
+        // 4. Limpiar el carrito
         carrito = [];
-        mostrarCarrito(); // Vuelve a actualizar el carrito vacío
-        cargarProductos()
+        mostrarCarrito();
+        cargarProductos();
 
-        // Mostrar mensaje de éxito
-        alert(`Compra realizada con éxito. Nota de remisión: ${nota}`);
+        // 5. Guardar en localStorage y redirigir
+        localStorage.setItem("notaRemision", JSON.stringify(nota));
+        window.location.href = "nota.html";
+
     } catch (error) {
         console.error("Error al finalizar la compra:", error);
         alert("Hubo un error al realizar la compra.");
     }
 });
+
 
 // Función para actualizar el stock de un producto
 async function actualizarStockProducto(productoId, nuevoStock) {
@@ -400,44 +411,21 @@ async function actualizarStockProducto(productoId, nuevoStock) {
         throw new Error("Error al actualizar stock.");
     }
 }
-
-// Función para generar la nota de remisión (puedes enviarla por WhatsApp o Email)
+// Función para generar la nota de remisión
 async function generarNotaDeRemision(carrito) {
-    try {
-        const totalCompra = carrito.reduce((total, p) => total + p.precio * p.cantidad, 0);
-        const iva = totalCompra * 0.16; // Suponiendo un IVA del 16%
-        const totalConIva = totalCompra + iva;
+    const res = await fetch("http://localhost:3000/api/remision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carrito }),
+    });
 
-        const nota = {
-            productos: carrito.map(p => ({
-                nombre: p.nombre,
-                cantidad: p.cantidad,
-                precio_unitario: p.precio,
-                total_producto: p.precio * p.cantidad
-            })),
-            totalCompra,
-            iva,
-            totalConIva
-        };
-
-        // Aquí podrías enviar la nota de remisión a la API para enviarla por email/whatsapp
-        const res = await fetch("http://localhost:3000/api/nota_remision", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nota)
-        });
-
-        const resultado = await res.json();
-        if (res.ok) {
-            return resultado.nota_remision_id; // Retorna el ID de la nota o un mensaje
-        } else {
-            throw new Error("Error al generar la nota de remisión.");
-        }
-    } catch (error) {
-        throw new Error("Hubo un problema al generar la nota de remisión.");
-    }
+    if (!res.ok) throw new Error("Error al generar la nota");
+    const data = await res.json();
+    return data.nota; // debe ser el folio generado en el backend
 }
-// -------------------- Cierre de sesion -----------------------
+
+
+
 function cerrarSesion() {
     localStorage.removeItem("usuario");
     alert("Has cerrado sesión.");

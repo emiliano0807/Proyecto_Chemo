@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nota de Remisión</title>
+  <script src="nota.js" defer></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+  <div class="container my-5">
+    <h2 class="mb-4">🧾 Nota de Remisión</h2>
+    <div id="infoNota" class="mb-3"></div>
+    <table class="table table-bordered" id="tablaProductos">
+      <thead class="table-secondary">
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Precio</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <h4>Total: $<span id="totalNota">0.00</span></h4>
+
+    <div class="mt-4">
+      <button class="btn btn-success me-2" id="btnWhatsapp">Compartir por WhatsApp</button>
+      <button class="btn btn-primary" id="btnEmail">Compartir por Email</button>
+    </div>
+  </div>
+</body>
+</html>

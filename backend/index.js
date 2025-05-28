@@ -2,9 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const { sequelize, connectDB } = require("./data/source");
 const productoRoutes = require("./routes/productoRoutes");
-const mermaRoutes = require("./routes/mermaRoutes");
 const notaRemisionRoutes = require("./routes/notaRemisionRoutes");
 const authRoutes = require("./routes/authRoutes"); // 👈 Ruta de autenticación
+const remisionRoutes = require("./routes/remisionRoutes"); // Ruta para la nota de remisión
 
 
 
@@ -17,9 +17,10 @@ app.use(express.json());
 
 // Rutas
 app.use("/api/productos", productoRoutes);
-app.use("/api/merma", mermaRoutes);
 app.use("/api/nota_remision", notaRemisionRoutes);
 app.use("/api", authRoutes); // 👈 Ruta de autenticación
+// Ruta para la nota de remisión
+app.use('/api/remision', remisionRoutes);
 
 // 🌱 Función para insertar productos iniciales si no existen
 const insertarProductosIniciales = async () => {

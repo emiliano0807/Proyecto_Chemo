@@ -1,9 +1,8 @@
-// routes/remisionRoutes.js
+// routes/notaRemisionRoutes.js
 const express = require('express');
 const router = express.Router();
-const remisionController = require('../controllers/remisionController');
+const { generarNotaDeRemision } = require('../controllers/remisionController');
 
-// POST /api/remision
-router.post('/', remisionController.generarNotaDeRemision);
+router.post('/remision', generarNotaDeRemision);
 
 module.exports = router;

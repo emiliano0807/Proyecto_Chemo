@@ -1,17 +1,31 @@
-// controllers/remisionController.js
-const remisionService = require('../services/remisionService');
+// controllers/notaRemisionController.js
+const { crearNotaRemision } = require('../services/remisionService');
 
-exports.generarNotaDeRemision = async (req, res) => {
+const generarNotaDeRemision = async (req, res) => {
     try {
-        const carrito = req.body.carrito; // [{ id, nombre, cantidad, precio, stock_actual }, ...]
-        if (!carrito || !Array.isArray(carrito) || carrito.length === 0) {
-            return res.status(400).json({ mensaje: "Carrito inválido" });
+        const { carrito } = req.body;
+
+        if (!carrito || carrito.length === 0) {
+            return res.status(400).json({ error: 'Carrito vacío' });
         }
 
-        const nota = await remisionService.procesarCompra(carrito);
-        res.status(200).json({ mensaje: "Compra realizada con éxito", nota });
+        const folio = Date.now().toString();
+        const fecha = new Date();
+        const total = carrito.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
+
+        const nuevaNota = await crearNotaRemision({
+            folio,
+            fecha,
+            productos: carrito,
+            total
+        });
+
+        res.status(201).json({ nota: nuevaNota });
     } catch (error) {
-        console.error("Error en generarNotaDeRemision:", error);
-        res.status(500).json({ mensaje: "Error al procesar la compra" });
+        res.status(500).json({ error: error.message });
     }
+};
+
+module.exports = {
+    generarNotaDeRemision
 };
